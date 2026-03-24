@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+!.env.example
+
+# Database
+data/
+*.db
+
+# Storage
+storage/
+
+# Logs
+*.log
+
+
