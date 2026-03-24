@@ -6,11 +6,11 @@ REM ============================================
 REM Configuration - Please modify before first use
 REM ============================================
 
-REM Server URL
-set "API_BASE=https://ryanai.org"
+REM Server URL (set your own server, or leave empty to use local OpenAI API only)
+set "API_BASE=https://your-server.example.com"
 
-REM Worker API Key (Get from admin, MUST fill in!)
-set "API_KEY=f678bea41a232af85e29ba8b84c68ccec5980c7aa6ec30e7"
+REM Worker API Key (get from your server admin)
+set "API_KEY=your-api-key-here"
 
 REM ============================================
 REM Auto-detect paths (usually no need to modify)
@@ -38,7 +38,7 @@ echo           Z-Image Worker Manager v2.0
 echo ============================================================
 echo.
 echo   [1] Start Worker
-echo   [2] Stop Worker
+echo   [2] Stop Worker / API
 echo   [3] Check Status
 echo   [4] GPU Info
 echo   [5] Configure Worker
@@ -47,6 +47,7 @@ echo   [7] Download Model
 echo   [0] Exit
 echo.
 echo ============================================================
+echo   OpenAI API is exposed automatically by Worker: http://localhost:8787/v1
 echo.
 
 REM Show current config
@@ -124,6 +125,20 @@ if not exist "%WORKER_DIR%\.env" (
     echo.
     goto configure
 )
+set "EMBEDDED_API_ENABLED=true"
+for /f "tokens=2 delims==" %%a in ('findstr "WORKER_ENABLE_OPENAI_COMPAT_API" "%WORKER_DIR%\.env" 2^>nul') do set "EMBEDDED_API_ENABLED=%%a"
+
+REM Prevent launching a second standalone model holder
+wmic process where "commandline like '%%openai_compat_server.py%%'" get processid,commandline 2>nul | findstr /i "openai_compat_server" >nul
+if %errorlevel%==0 (
+    echo [WARNING] Standalone OpenAI Image API is already running.
+    echo.
+    echo Worker now embeds the OpenAI-compatible API and shares the same model instance.
+    echo Stop the standalone API first, otherwise both processes will load their own copy.
+    echo.
+    pause
+    goto menu
+)
 
 echo Starting Worker...
 echo.
@@ -137,6 +152,11 @@ start "Z-Image Worker" cmd /k "set HF_HUB_DISABLE_SYMLINKS_WARNING=1 && "%PYTHON
 echo.
 echo [SUCCESS] Worker started in new window!
 echo.
+if /i not "%EMBEDDED_API_ENABLED%"=="false" (
+    echo   OpenAI API is also exposed by Worker: http://localhost:8787/v1
+) else (
+    echo   Embedded OpenAI API is disabled in .env
+)
 echo Note: First start needs to load model (1-2 min), please wait.
 echo.
 pause
@@ -146,23 +166,29 @@ goto menu
 cls
 echo.
 echo ============================================
-echo   Stopping Z-Image Worker
+echo   Stopping Z-Image Worker / API
 echo ============================================
 echo.
 
 REM Find and stop worker.py process
 set "found=0"
 for /f "tokens=2" %%a in ('wmic process where "commandline like '%%worker.py%%'" get processid 2^>nul ^| findstr /r "[0-9]"') do (
-    echo Stopping process PID: %%a
+    echo Stopping Worker PID: %%a
+    taskkill /PID %%a /F >nul 2>&1
+    set "found=1"
+)
+
+for /f "tokens=2" %%a in ('wmic process where "commandline like '%%openai_compat_server.py%%'" get processid 2^>nul ^| findstr /r "[0-9]"') do (
+    echo Stopping API PID: %%a
     taskkill /PID %%a /F >nul 2>&1
     set "found=1"
 )
 
 if "%found%"=="1" (
     echo.
-    echo [SUCCESS] Worker stopped!
+    echo [SUCCESS] Worker/API stopped!
 ) else (
-    echo [INFO] No running Worker found.
+    echo [INFO] No running Worker/API process found.
 )
 echo.
 pause
@@ -176,8 +202,7 @@ echo   Worker Status
 echo ============================================
 echo.
 
-REM Check process
-echo === Process Status ===
+echo === Worker Process ===
 wmic process where "commandline like '%%worker.py%%'" get processid,commandline 2>nul | findstr /i "worker" >nul
 if %errorlevel%==0 (
     echo [RUNNING] Worker is running
@@ -185,6 +210,31 @@ if %errorlevel%==0 (
     wmic process where "commandline like '%%worker.py%%'" get processid 2>nul | findstr /r "[0-9]"
 ) else (
     echo [STOPPED] Worker is not running
+)
+
+echo.
+echo === OpenAI Image API ===
+set "EMBEDDED_API_ENABLED=true"
+if exist "%WORKER_DIR%\.env" (
+    for /f "tokens=2 delims==" %%a in ('findstr "WORKER_ENABLE_OPENAI_COMPAT_API" "%WORKER_DIR%\.env" 2^>nul') do set "EMBEDDED_API_ENABLED=%%a"
+)
+wmic process where "commandline like '%%openai_compat_server.py%%'" get processid,commandline 2>nul | findstr /i "openai_compat_server" >nul
+if %errorlevel%==0 (
+    echo [RUNNING] OpenAI Image API is running
+    echo.
+    wmic process where "commandline like '%%openai_compat_server.py%%'" get processid 2>nul | findstr /r "[0-9]"
+) else (
+    wmic process where "commandline like '%%worker.py%%'" get processid,commandline 2>nul | findstr /i "worker.py" >nul
+    if %errorlevel%==0 (
+        if /i not "%EMBEDDED_API_ENABLED%"=="false" (
+            echo [RUNNING] OpenAI Image API is embedded in Worker ^(shared model^)
+            echo   URL: http://localhost:8787/v1
+        ) else (
+            echo [DISABLED] OpenAI Image API is disabled in Worker config
+        )
+    ) else (
+        echo [STOPPED] OpenAI Image API is not running
+    )
 )
 
 echo.
@@ -234,12 +284,11 @@ echo.
 
 REM Check API_KEY
 if "%API_KEY%"=="YOUR_API_KEY_HERE" (
-    echo [WARNING] API Key not configured!
+    echo [WARNING] Worker API Key not configured.
     echo.
-    echo Please edit this bat file line 13, fill in the key from admin.
+    echo Remote polling Worker mode will not work until you fill in line 13.
+    echo OpenAI Image API mode can still be configured and used locally.
     echo.
-    pause
-    goto menu
 )
 
 REM Read existing config or use defaults
@@ -279,7 +328,20 @@ echo.
 echo # Model Configuration
 echo MODEL_ID=Tongyi-MAI/Z-Image-Turbo
 echo DEVICE=cuda
+echo MULTI_GPU_MODE=auto
+echo MULTI_GPU_DEVICES=
+echo GPU_MEMORY_RESERVE_GB=0.5
 echo USE_CPU_OFFLOAD=true
+echo WORKER_ENABLE_OPENAI_COMPAT_API=true
+echo.
+echo # OpenAI-Compatible Image API
+echo OPENAI_COMPAT_HOST=0.0.0.0
+echo OPENAI_COMPAT_PORT=8787
+echo OPENAI_COMPAT_API_KEY=
+echo OPENAI_COMPAT_MODEL_NAME=Tongyi-MAI/Z-Image-Turbo
+echo OPENAI_COMPAT_PUBLIC_BASE_URL=
+echo OPENAI_COMPAT_DEFAULT_RESPONSE_FORMAT=url
+echo OPENAI_COMPAT_MAX_IMAGES_PER_REQUEST=1
 echo.
 echo # Timing Configuration
 echo HEARTBEAT_INTERVAL=10

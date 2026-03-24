@@ -1,0 +1,16 @@
+[Unit]
+Description=Z-Image GPU Worker + OpenAI-Compatible Image API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust WorkingDirectory to your actual install path
+WorkingDirectory=/home/YOUR_USER/zimage-worker
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/YOUR_USER/zimage-worker/venv/bin/python worker.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

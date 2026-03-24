@@ -9,6 +9,7 @@
 
   - Windows 10/11
   - NVIDIA GPU（8GB 显存以上）
+    支持单进程多卡分片；例如 10GB + 12GB 可共同承载一个任务
   - 内存 16GB 以上
   - 硬盘 50GB 空闲空间
   - CUDA 11.8 或更高版本
@@ -34,11 +35,11 @@
      
      ⚠️ 注意：Python 3.13/3.12/3.10 均不支持 PyTorch！
 
-  4. 双击运行 StartWorker.bat
+ 4. 双击运行 StartWorker.bat
      - 选择 [6] 安装依赖（约 5-10 分钟）
      - 选择 [5] 配置 Worker ID 和名称
      - 选择 [7] 下载模型（约 25GB，首次需要）
-     - 选择 [1] 启动 Worker
+     - 选择 [1] 启动 Worker（同时连接远程任务队列，并暴露 OpenAI 图片 API）
 
      注：API_KEY 已内置，无需手动配置
 
@@ -47,6 +48,7 @@
 
   StartWorker.bat    - 管理器，双击运行
   worker.py          - 主程序
+  openai_compat_server.py - OpenAI 兼容图片 API 实现（由 Worker 内嵌调用）
   config.py          - 配置加载
   generator.py       - 图像生成
   api_client.py      - 服务器通信
@@ -66,9 +68,41 @@
   Q: 生成速度很慢
   A: 8GB 显存会启用 CPU Offload，速度约 2-3 分钟/张
      10GB+ 显存速度约 20-40 秒/张
+     多卡机器默认会优先尝试单进程多卡分片，尽量减少 CPU Offload
+
+  Q: 如何指定参与分片的显卡
+  A: 编辑 .env：
+     TORCH_DTYPE=bf16
+     MULTI_GPU_MODE=auto
+     MULTI_GPU_DEVICES=0,1
+     GPU_MEMORY_RESERVE_GB=0.5
+     MULTI_GPU_VAE_DECODE_RESERVE_GB=0.5
+     如需禁止回退到单卡/CPU Offload，可改为 MULTI_GPU_MODE=force
+     30/40 系 RTX 建议优先用 bf16，通常比 fp16 更稳定
 
   Q: 连接服务器失败
   A: 检查 API_KEY 是否正确，网络是否正常
+
+  Q: 能不能给 Cherry Studio / 其他 OpenAI 兼容工具用
+  A: 可以。运行 StartWorker.bat 后选择 [1] 启动 Worker
+     默认地址：
+       http://localhost:8787/v1
+     默认模型名：
+       Tongyi-MAI/Z-Image-Turbo
+     OpenAI 图片接口由 Worker 进程内嵌暴露，和远程任务共用同一份模型显存。
+     常用 .env 配置：
+       OPENAI_COMPAT_HOST=0.0.0.0
+       OPENAI_COMPAT_PORT=8787
+       OPENAI_COMPAT_API_KEY=
+       OPENAI_COMPAT_MODEL_NAME=Tongyi-MAI/Z-Image-Turbo
+       OPENAI_COMPAT_PUBLIC_BASE_URL=
+       OPENAI_COMPAT_DEFAULT_RESPONSE_FORMAT=url
+     Cherry Studio 可按“自定义 OpenAI 服务商”接入。
+
+  Q: Worker 和 OpenAI API 可以同时开吗
+  A: 现在推荐只启动 Worker。
+     Worker 会在同一进程内同时暴露 OpenAI 兼容图片 API，和远程任务轮询共用同一份模型实例。
+     如果你已经启动了 Worker，就不要再单独启动 openai_compat_server.py。
 
 
 【技术支持】
