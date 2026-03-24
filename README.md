@@ -9,6 +9,7 @@
 > - OpenAI 兼容 API（`/v1/images/generations` 和 `/v1/chat/completions`）
 > - 作品广场分享默认需要管理员审核
 > - NSFW 分区（图片默认隐藏，需主动查看）
+> - 显存不足时自动降级到 CPU Offload，单显卡 4GB 显存 + 12GB 内存即可运行
 
 ## 架构概览
 

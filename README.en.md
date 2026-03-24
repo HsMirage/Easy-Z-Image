@@ -9,6 +9,7 @@ An online AI image generation platform powered by [Z-Image-Turbo](https://huggin
 > - OpenAI-compatible API (`/v1/images/generations` and `/v1/chat/completions`)
 > - Gallery submissions require admin review before going public
 > - NSFW section (images hidden by default, opt-in to view)
+> - Automatically falls back to CPU Offload when VRAM is insufficient — runs on a single GPU with 4 GB VRAM + 12 GB RAM
 
 ## Architecture
 
