@@ -4,6 +4,12 @@
 
 基于 [Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) 的在线 AI 生图平台，采用 Server + Worker 分布式架构。
 
+> 本项目基于 [Linux DO](https://linux.do) 社区大佬 **RyanVan** 开源的 [RyanVan Z-Image](https://linux.do) 二次开发，在原版基础上新增：
+> - 多显卡生成支持（GPU 分片，无需 NVLink）
+> - OpenAI 兼容 API（`/v1/images/generations` 和 `/v1/chat/completions`）
+> - 作品广场分享默认需要管理员审核
+> - NSFW 分区（图片默认隐藏，需主动查看）
+
 ## 架构概览
 
 ```

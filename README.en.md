@@ -4,6 +4,12 @@ English | [中文](README.md)
 
 An online AI image generation platform powered by [Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo), built with a distributed Server + Worker architecture.
 
+> This project is a fork of **RyanVan Z-Image** by community member **RyanVan** on [Linux DO](https://linux.do), with the following additions:
+> - Multi-GPU generation support (tensor sharding, no NVLink required)
+> - OpenAI-compatible API (`/v1/images/generations` and `/v1/chat/completions`)
+> - Gallery submissions require admin review before going public
+> - NSFW section (images hidden by default, opt-in to view)
+
 ## Architecture
 
 ```
