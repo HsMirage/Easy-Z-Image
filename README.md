@@ -9,7 +9,6 @@
 > - OpenAI 兼容 API（`/v1/images/generations` 和 `/v1/chat/completions`）
 > - 作品广场分享默认需要管理员审核
 > - NSFW 分区（图片默认隐藏，需主动查看）
-> - 显存不足时自动降级到 CPU Offload，单显卡 4GB 显存 + 12GB 内存即可运行
 
 ## 架构概览
 
@@ -36,8 +35,9 @@
 - 作品广场（画廊），支持发布、审核、点赞、评论
 - 管理后台：用户管理、任务管理、Worker 监控
 - 聊天室
-- Worker 端提供 OpenAI 兼容 API (`/v1/images/generations`)
+- Worker 端提供 OpenAI 兼容 API（`/v1/images/generations` 和 `/v1/chat/completions`）
 - 多 GPU 分片支持（无需 NVLink）
+- 显存不足时自动降级到 CPU Offload，单显卡 4GB 显存 + 12GB 内存即可运行
 - 支持 Windows（StartWorker.bat）和 Linux（systemd）部署
 
 ## 项目结构
@@ -99,7 +99,13 @@ Server 默认运行在 `http://localhost:8000`，API 文档访问 `http://localh
 
 ### Worker 部署
 
-**要求：** Python 3.11、NVIDIA GPU（8GB+ 显存）、CUDA 11.8+
+**要求：** Python 3.11、NVIDIA GPU、CUDA 11.8+
+
+| 运行模式 | 显存要求 |
+|----------|----------|
+| CPU Offload（慢） | 4GB 显存 + 12GB 内存 |
+| 单显卡（推荐） | 16GB 显存 |
+| 多显卡分片 | 多卡显存总和 ≥ 16GB |
 
 #### Windows
 

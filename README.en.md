@@ -9,7 +9,6 @@ An online AI image generation platform powered by [Z-Image-Turbo](https://huggin
 > - OpenAI-compatible API (`/v1/images/generations` and `/v1/chat/completions`)
 > - Gallery submissions require admin review before going public
 > - NSFW section (images hidden by default, opt-in to view)
-> - Automatically falls back to CPU Offload when VRAM is insufficient — runs on a single GPU with 4 GB VRAM + 12 GB RAM
 
 ## Architecture
 
@@ -36,8 +35,9 @@ An online AI image generation platform powered by [Z-Image-Turbo](https://huggin
 - Public gallery with publish review, likes, and comments
 - Admin dashboard: user management, job management, Worker monitoring
 - Chat room
-- OpenAI-compatible API on Worker (`/v1/images/generations`)
+- OpenAI-compatible API on Worker (`/v1/images/generations` and `/v1/chat/completions`)
 - Multi-GPU sharding support (no NVLink required)
+- Automatically falls back to CPU Offload when VRAM is insufficient — runs on a single GPU with 4 GB VRAM + 12 GB RAM
 - Deployable on Windows (StartWorker.bat) and Linux (systemd)
 
 ## Project Structure
@@ -99,7 +99,13 @@ The server runs at `http://localhost:8000` by default. API docs are available at
 
 ### Worker
 
-**Requirements:** Python 3.11, NVIDIA GPU (8 GB+ VRAM), CUDA 11.8+
+**Requirements:** Python 3.11, NVIDIA GPU, CUDA 11.8+
+
+| Mode | VRAM Requirement |
+|------|------------------|
+| CPU Offload (slow) | 4 GB VRAM + 12 GB RAM |
+| Single GPU (recommended) | 16 GB VRAM |
+| Multi-GPU sharding | Combined VRAM ≥ 16 GB |
 
 #### Windows
 
