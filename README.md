@@ -1,5 +1,11 @@
 # Easy-Z-Image
 
+---
+
+<p align="center"><strong>⭐ <a href="https://github.com/HsMirage/AIPlanHub">AIPlanHub</a> — 一站式对比国内主流 AI 编程订阅方案，覆盖 9 大平台、25+ 套餐，帮你找到性价比最高的选择 ⭐</strong></p>
+
+---
+
 [English](README.en.md) | 中文
 
 基于 [Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) 的在线 AI 生图平台，采用 Server + Worker 分布式架构。
